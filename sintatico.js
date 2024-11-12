@@ -1,6 +1,5 @@
-const fs = require("fs"); // Certifique-se de importar o módulo fs
+const fs = require("fs");
 
-// Definição dos tipos de tokens
 const tokenTypes = [
   {
     type: "KEYWORD",
@@ -11,11 +10,10 @@ const tokenTypes = [
   { type: "BOOLEAN", regex: /\b(true|false)\b/ },
   { type: "IDENTIFIER", regex: /\b[a-zA-Z_][a-zA-Z0-9_]*\b/ },
   { type: "NUMBER", regex: /\b\d+(\.\d+)?\b/ },
-  { type: "STRING", regex: /"(?:[^"\\]|\\.)*"/ }, // Suporte para strings
+  { type: "STRING", regex: /"(?:[^"\\]|\\.)*"/ },
   { type: "WHITESPACE", regex: /\s+/, ignore: true },
 ];
 
-// Classe Lexer
 class Lexer {
   constructor(input) {
     this.input = input;
@@ -92,19 +90,17 @@ class Parser {
   }
 
   statement() {
-    if (
-      this.currentToken &&
-      this.currentToken.type === "KEYWORD" &&
-      ["int", "float", "string", "bool"].includes(this.currentToken.value)
-    ) {
-      return this.declaration();
-    }
-    if (
-      this.currentToken &&
-      this.currentToken.type === "KEYWORD" &&
-      this.currentToken.value === "if"
-    ) {
-      return this.ifStatement();
+    if (this.currentToken && this.currentToken.type === "KEYWORD") {
+      const keyword = this.currentToken.value;
+      if (["int", "float", "string", "bool"].includes(keyword)) {
+        return this.declaration();
+      } else if (keyword === "if") {
+        return this.ifStatement();
+      } else if (keyword === "for") {
+        return this.forStatement();
+      } else if (keyword === "while") {
+        return this.whileStatement();
+      }
     }
     throw new SyntaxError("Expected statement.");
   }
@@ -189,6 +185,78 @@ class Parser {
       parameters: params,
       body,
     };
+  }
+
+  whileStatement() {
+    this.eat("KEYWORD");
+
+    if (this.eat("PUNCTUATION") !== "(") {
+      throw new SyntaxError("Expected '(' after 'while'.");
+    }
+
+    const condition = this.expression();
+
+    if (this.eat("PUNCTUATION") !== ")") {
+      throw new SyntaxError("Expected ')' after while condition.");
+    }
+
+    const block = this.block();
+
+    return {
+      type: "WhileStatement",
+      condition,
+      block,
+    };
+  }
+
+  forStatement() {
+    this.eat("KEYWORD"); // Consome o 'for'
+
+    if (this.currentToken.value !== "(") {
+      throw new SyntaxError("Expected '(' after 'for'.");
+    }
+    this.eat("PUNCTUATION");
+
+    let initializer = this.eat("IDENTIFIER")
+      ? this.assignmentExpression()
+      : null;
+
+    if (this.currentToken.value !== ";") {
+      throw new SyntaxError("Expected ';' after initializer in 'for'.");
+    }
+    this.eat("PUNCTUATION");
+
+    const condition = this.expression();
+
+    if (this.currentToken.value !== ";") {
+      throw new SyntaxError("Expected ';' after condition in 'for'.");
+    }
+    this.eat("PUNCTUATION");
+
+    const increment = this.expression();
+
+    if (this.currentToken.value !== ")") {
+      throw new SyntaxError("Expected ')' after increment in 'for'.");
+    }
+    this.eat("PUNCTUATION");
+    const block = this.block();
+
+    return {
+      type: "ForStatement",
+      initializer,
+      condition,
+      increment,
+      block,
+    };
+  }
+
+  assignmentExpression() {
+    const identifier = this.eat("IDENTIFIER");
+    if (this.eat("OPERATOR") !== "=") {
+      throw new SyntaxError("Expected '=' in assignment.");
+    }
+    const value = this.expression();
+    return { type: "AssignmentExpression", name: identifier, value };
   }
 
   parameterList() {
@@ -280,9 +348,9 @@ class Parser {
     this.currentToken = this.tokens[0];
     return this.program();
   }
+  0;
 }
 
-// Leitura do arquivo
 fs.readFile("code.txt", "utf8", (err, data) => {
   if (err) {
     console.error("Erro ao ler o arquivo:", err);
