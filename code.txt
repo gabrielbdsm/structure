@@ -1,11 +1,16 @@
-int a = 5;
-int b = 0;
-int count = 0;
-if (a > 0 && b < 0) {
-    return true;
-} else {
-    return false;
+int x = 5;
+float y = 3.14;
+bool isActive = true;
+string name = "Gabriel";
+int sum = x + 10;
+int product = x * 2;
+float result = (y / 2) + x - 1.5;
+
+if (isActive) {
+    int z = sum * product;
+    bool flag = false;
 }
-while (count < 3){
-    count++;
+
+for (int i = 0; i < 10; i = i + 1) {
+    x = x + i;
 }
